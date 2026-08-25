@@ -4,7 +4,7 @@ Production-ready, clean architecture principles, and secure E-Commerce Backend A
 
 ---
 
-## 🇬🇧 English
+## 🌐 English
 
 ### 🚀 Overview
 A robust, scalable, and enterprise-grade backend REST API designed for e-commerce applications. Built following industry standards, clean DTO mappings, transactional service layers, and global exception handling.
@@ -40,7 +40,7 @@ A robust, scalable, and enterprise-grade backend REST API designed for e-commerc
 
 ---
 
-## 🇹🇷 Türkçe
+## 📍 Türkçe
 
 ### 🚀 Genel Bakış
 Spring Boot 3, Spring Security (JWT) ve temiz mimari prensipleri kullanılarak geliştirilmiş, üretime hazır (production-ready) E-Ticaret Backend REST API projesi.
