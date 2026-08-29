@@ -38,6 +38,13 @@ A robust, scalable, and enterprise-grade backend REST API designed for e-commerc
 - `POST /api/v1/orders` - Convert active cart to an order
 - `GET /api/v1/orders` - Fetch user order history
 
+### 💻 Getting Started (Installation)
+1. **Clone the repository:** `git clone https://github.com/yusufkayiss/e-commerce-core-rest-api.git`
+2. **Configure Database:** Update credentials in `src/main/resources/application.yml`.
+3. **Build & Run:** 
+   `mvn clean install` 
+   `mvn spring-boot:run`
+
 ---
 
 ## 📍 Türkçe
@@ -73,3 +80,10 @@ Spring Boot 3, Spring Security (JWT) ve temiz mimari prensipleri kullanılarak g
 #### 📦 Sipariş İşlemleri (Orders)
 - `POST /api/v1/orders` - Sepetteki ürünlerle sipariş oluşturma
 - `GET /api/v1/orders` - Kullanıcı sipariş geçmişini listeleme
+
+### 💻 Kurulum Adımları
+1. **Repoyu Klonlayın:** `git clone https://github.com/yusufkayiss/e-commerce-core-rest-api.git`
+2. **Veritabanı Ayarı:** `src/main/resources/application.yml` içindeki bilgileri kendi lokal veritabanınıza göre güncelleyin.
+3. **Çalıştırın:** 
+   `mvn clean install` 
+   `mvn spring-boot:run`
