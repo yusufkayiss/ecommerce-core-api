@@ -1,5 +1,7 @@
 # 🛒 E-Commerce Core REST API
 
+[![Java CI with Maven](https://github.com/yusufkayiss/ecommerce-core-api/actions/workflows/maven.yml/badge.svg)](https://github.com/yusufkayiss/ecommerce-core-api/actions/workflows/maven.yml)
+
 Production-ready, clean architecture principles, and secure E-Commerce Backend API built with Spring Boot.
 
 ---
