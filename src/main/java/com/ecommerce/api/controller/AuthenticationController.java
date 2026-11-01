@@ -3,6 +3,8 @@ package com.ecommerce.api.controller;
 import com.ecommerce.api.dto.AuthenticationRequest;
 import com.ecommerce.api.dto.AuthenticationResponse;
 import com.ecommerce.api.dto.RegisterRequest;
+import com.ecommerce.api.dto.TokenRefreshRequest;
+import com.ecommerce.api.dto.TokenRefreshResponse;
 import com.ecommerce.api.service.AuthenticationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -31,5 +33,12 @@ public class AuthenticationController {
             @Valid @RequestBody AuthenticationRequest request
     ) {
         return ResponseEntity.ok(service.authenticate(request));
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<TokenRefreshResponse> refreshToken(
+            @Valid @RequestBody TokenRefreshRequest request
+    ) {
+        return ResponseEntity.ok(service.refreshToken(request));
     }
 }
