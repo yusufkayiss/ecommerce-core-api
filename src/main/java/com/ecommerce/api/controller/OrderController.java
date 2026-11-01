@@ -6,6 +6,7 @@ import com.ecommerce.api.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,12 +20,14 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<OrderResponse> createOrder(@AuthenticationPrincipal User user) {
         OrderResponse response = orderService.createOrder(user.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<List<OrderResponse>> getUserOrders(@AuthenticationPrincipal User user) {
         List<OrderResponse> orders = orderService.getUserOrders(user.getId());
         return ResponseEntity.ok(orders);
