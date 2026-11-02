@@ -78,4 +78,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 })
                 .orElseThrow(() -> new RuntimeException("Refresh token veritabanında bulunamadı!"));
     }
+
+    @Override
+    public void logout(String refreshToken) {
+        if (refreshToken != null && !refreshToken.isBlank()) {
+            refreshTokenService.deleteByToken(refreshToken);
+        }
+    }
 }

@@ -60,4 +60,10 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı: " + userId));
         return refreshTokenRepository.deleteByUser(user);
     }
+
+    @Override
+    @Transactional
+    public int deleteByToken(String token) {
+        return refreshTokenRepository.deleteByToken(token);
+    }
 }

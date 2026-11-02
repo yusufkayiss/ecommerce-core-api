@@ -1,18 +1,11 @@
 package com.ecommerce.api.controller;
 
-import com.ecommerce.api.dto.AuthenticationRequest;
-import com.ecommerce.api.dto.AuthenticationResponse;
-import com.ecommerce.api.dto.RegisterRequest;
-import com.ecommerce.api.dto.TokenRefreshRequest;
-import com.ecommerce.api.dto.TokenRefreshResponse;
+import com.ecommerce.api.dto.*;
 import com.ecommerce.api.service.AuthenticationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -40,5 +33,13 @@ public class AuthenticationController {
             @Valid @RequestBody TokenRefreshRequest request
     ) {
         return ResponseEntity.ok(service.refreshToken(request));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(
+            @Valid @RequestBody TokenRefreshRequest request
+    ) {
+        service.logout(request.getRefreshToken());
+        return ResponseEntity.ok("Başarıyla çıkış yapıldı.");
     }
 }

@@ -13,4 +13,6 @@ public interface RefreshTokenService {
     RefreshToken verifyExpiration(RefreshToken token);
 
     int deleteByUserId(Long userId);
+
+    int deleteByToken(String token);
 }
