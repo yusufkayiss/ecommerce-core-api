@@ -39,9 +39,29 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(TokenRefreshException.class)
+    public ResponseEntity<ErrorResponse> handleTokenRefreshException(
+            TokenRefreshException ex,
+            HttpServletRequest request) {
+
+        log.warn("Token refresh error: {}", ex.getMessage());
+
+        ErrorResponse errorDetails = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.FORBIDDEN.value(),
+                HttpStatus.FORBIDDEN.getReasonPhrase(),
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+
+        return new ResponseEntity<>(errorDetails, HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(
             MethodArgumentNotValidException ex) {
+
+        log.warn("Validation error: {}", ex.getMessage());
 
         Map<String, String> errors = new HashMap<>();
 
@@ -53,5 +73,28 @@ public class GlobalExceptionHandler {
         });
 
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleGlobalException(
+            Exception ex,
+            HttpServletRequest request) {
+
+        log.error("Unhandled exception occurred: ", ex);
+
+        ErrorResponse errorDetails = new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                ex.getMessage() != null
+                        ? ex.getMessage()
+                        : "Beklenmeyen bir hata oluştu.",
+                request.getRequestURI()
+        );
+
+        return new ResponseEntity<>(
+                errorDetails,
+                HttpStatus.INTERNAL_SERVER_ERROR
+        );
     }
 }

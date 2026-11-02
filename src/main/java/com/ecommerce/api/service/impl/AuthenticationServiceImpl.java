@@ -5,6 +5,8 @@ import com.ecommerce.api.dto.*;
 import com.ecommerce.api.entity.RefreshToken;
 import com.ecommerce.api.entity.Role;
 import com.ecommerce.api.entity.User;
+import com.ecommerce.api.exception.ResourceNotFoundException;
+import com.ecommerce.api.exception.TokenRefreshException;
 import com.ecommerce.api.repository.UserRepository;
 import com.ecommerce.api.service.AuthenticationService;
 import com.ecommerce.api.service.RefreshTokenService;
@@ -53,7 +55,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 )
         );
         var user = repository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Kullanıcı bulunamadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
 
         var jwtToken = jwtService.generateToken(user);
         var refreshToken = refreshTokenService.createRefreshToken(user.getId());
@@ -76,7 +78,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                             .refreshToken(request.getRefreshToken())
                             .build();
                 })
-                .orElseThrow(() -> new RuntimeException("Refresh token veritabanında bulunamadı!"));
+                .orElseThrow(() -> new TokenRefreshException("Refresh token veritabanında bulunamadı!"));
     }
 
     @Override
