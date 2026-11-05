@@ -15,9 +15,11 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderResponse {
+
     private Long id;
-    private BigDecimal totalPrice;
+    private Long userId;
+    private BigDecimal totalAmount;
     private OrderStatus status;
-    private LocalDateTime createdAt;
     private List<OrderItemResponse> items;
+    private LocalDateTime createdAt;
 }

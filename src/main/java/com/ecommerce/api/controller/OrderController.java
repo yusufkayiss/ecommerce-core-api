@@ -1,6 +1,7 @@
 package com.ecommerce.api.controller;
 
 import com.ecommerce.api.dto.OrderResponse;
+import com.ecommerce.api.entity.OrderStatus;
 import com.ecommerce.api.entity.User;
 import com.ecommerce.api.service.OrderService;
 import lombok.RequiredArgsConstructor;
@@ -20,16 +21,27 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<OrderResponse> createOrder(@AuthenticationPrincipal User user) {
-        OrderResponse response = orderService.createOrder(user.getId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(user.getId()));
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<List<OrderResponse>> getUserOrders(@AuthenticationPrincipal User user) {
-        List<OrderResponse> orders = orderService.getUserOrders(user.getId());
-        return ResponseEntity.ok(orders);
+        return ResponseEntity.ok(orderService.getUserOrders(user.getId()));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<OrderResponse> getOrderById(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long id) {
+        return ResponseEntity.ok(orderService.getOrderById(user.getId(), id));
+    }
+
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<OrderResponse> updateOrderStatus(
+            @PathVariable Long id,
+            @RequestParam OrderStatus status) {
+        return ResponseEntity.ok(orderService.updateOrderStatus(id, status));
     }
 }
