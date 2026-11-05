@@ -7,7 +7,6 @@ import com.ecommerce.api.service.CartService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,33 +17,34 @@ public class CartController {
 
     private final CartService cartService;
 
-    @PostMapping("/add")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @GetMapping
+    public ResponseEntity<CartResponse> getCart(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(cartService.getCartByUserId(user.getId()));
+    }
+
+    @PostMapping("/items")
     public ResponseEntity<CartResponse> addToCart(
             @AuthenticationPrincipal User user,
             @Valid @RequestBody AddToCartRequest request) {
-        CartResponse updatedCart = cartService.addToCart(user.getId(), request);
-        return ResponseEntity.ok(updatedCart);
+        return ResponseEntity.ok(cartService.addToCart(user.getId(), request));
     }
 
-    @GetMapping
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<CartResponse> getCart(@AuthenticationPrincipal User user) {
-        CartResponse cart = cartService.getCartByUserId(user.getId());
-        return ResponseEntity.ok(cart);
-    }
-
-    @DeleteMapping("/items/{cartItemId}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<CartResponse> removeFromCart(
+    @PutMapping("/items/{itemId}")
+    public ResponseEntity<CartResponse> updateItemQuantity(
             @AuthenticationPrincipal User user,
-            @PathVariable Long cartItemId) {
-        CartResponse updatedCart = cartService.removeFromCart(user.getId(), cartItemId);
-        return ResponseEntity.ok(updatedCart);
+            @PathVariable Long itemId,
+            @RequestParam Integer quantity) {
+        return ResponseEntity.ok(cartService.updateItemQuantity(user.getId(), itemId, quantity));
     }
 
-    @DeleteMapping("/clear")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @DeleteMapping("/items/{itemId}")
+    public ResponseEntity<CartResponse> removeItemFromCart(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long itemId) {
+        return ResponseEntity.ok(cartService.removeItemFromCart(user.getId(), itemId));
+    }
+
+    @DeleteMapping
     public ResponseEntity<Void> clearCart(@AuthenticationPrincipal User user) {
         cartService.clearCart(user.getId());
         return ResponseEntity.noContent().build();

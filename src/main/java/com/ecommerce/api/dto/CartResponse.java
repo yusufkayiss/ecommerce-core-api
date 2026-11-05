@@ -13,7 +13,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CartResponse {
+
     private Long id;
-    private BigDecimal totalPrice;
+    private Long userId;
     private List<CartItemResponse> items;
+    private BigDecimal totalAmount;
 }
