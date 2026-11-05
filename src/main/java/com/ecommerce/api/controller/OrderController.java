@@ -1,6 +1,6 @@
 package com.ecommerce.api.controller;
 
-import com.ecommerce.api.dto.OrderResponse;
+import com.ecommerce.api.dto.response.OrderResponse;
 import com.ecommerce.api.entity.OrderStatus;
 import com.ecommerce.api.entity.User;
 import com.ecommerce.api.service.OrderService;

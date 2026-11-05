@@ -1,7 +1,7 @@
 package com.ecommerce.api.service;
 
-import com.ecommerce.api.dto.AddToCartRequest;
-import com.ecommerce.api.dto.CartResponse;
+import com.ecommerce.api.dto.request.AddToCartRequest;
+import com.ecommerce.api.dto.response.CartResponse;
 
 public interface CartService {
 

@@ -1,7 +1,7 @@
 package com.ecommerce.api.controller;
 
-import com.ecommerce.api.dto.CreateProductRequest;
-import com.ecommerce.api.dto.ProductResponse;
+import com.ecommerce.api.dto.request.CreateProductRequest;
+import com.ecommerce.api.dto.response.ProductResponse;
 import com.ecommerce.api.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

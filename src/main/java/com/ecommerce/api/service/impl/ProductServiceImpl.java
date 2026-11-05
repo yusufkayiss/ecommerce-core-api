@@ -1,7 +1,7 @@
 package com.ecommerce.api.service.impl;
 
-import com.ecommerce.api.dto.CreateProductRequest;
-import com.ecommerce.api.dto.ProductResponse;
+import com.ecommerce.api.dto.request.CreateProductRequest;
+import com.ecommerce.api.dto.response.ProductResponse;
 import com.ecommerce.api.entity.Category;
 import com.ecommerce.api.entity.Product;
 import com.ecommerce.api.exception.ResourceNotFoundException;

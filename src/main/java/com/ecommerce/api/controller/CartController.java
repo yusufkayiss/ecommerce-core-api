@@ -1,7 +1,7 @@
 package com.ecommerce.api.controller;
 
-import com.ecommerce.api.dto.AddToCartRequest;
-import com.ecommerce.api.dto.CartResponse;
+import com.ecommerce.api.dto.request.AddToCartRequest;
+import com.ecommerce.api.dto.response.CartResponse;
 import com.ecommerce.api.entity.User;
 import com.ecommerce.api.service.CartService;
 import jakarta.validation.Valid;

@@ -1,7 +1,7 @@
 package com.ecommerce.api.service;
 
-import com.ecommerce.api.dto.CreateProductRequest;
-import com.ecommerce.api.dto.ProductResponse;
+import com.ecommerce.api.dto.request.CreateProductRequest;
+import com.ecommerce.api.dto.response.ProductResponse;
 
 import java.util.List;
 

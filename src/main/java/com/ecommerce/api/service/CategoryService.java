@@ -1,8 +1,8 @@
 package com.ecommerce.api.service;
 
-import com.ecommerce.api.dto.CategoryCreateRequest;
-import com.ecommerce.api.dto.CategoryResponse;
-import com.ecommerce.api.dto.CategoryUpdateRequest;
+import com.ecommerce.api.dto.request.CategoryCreateRequest;
+import com.ecommerce.api.dto.response.CategoryResponse;
+import com.ecommerce.api.dto.request.CategoryUpdateRequest;
 
 import java.util.List;
 

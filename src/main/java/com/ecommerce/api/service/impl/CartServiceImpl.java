@@ -1,12 +1,13 @@
 package com.ecommerce.api.service.impl;
 
-import com.ecommerce.api.dto.AddToCartRequest;
-import com.ecommerce.api.dto.CartItemResponse;
-import com.ecommerce.api.dto.CartResponse;
+import com.ecommerce.api.dto.request.AddToCartRequest;
+import com.ecommerce.api.dto.response.CartItemResponse;
+import com.ecommerce.api.dto.response.CartResponse;
 import com.ecommerce.api.entity.Cart;
 import com.ecommerce.api.entity.CartItem;
 import com.ecommerce.api.entity.Product;
 import com.ecommerce.api.entity.User;
+import com.ecommerce.api.exception.BadRequestException;
 import com.ecommerce.api.exception.ResourceNotFoundException;
 import com.ecommerce.api.repository.CartRepository;
 import com.ecommerce.api.repository.ProductRepository;
@@ -44,7 +45,7 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı: " + request.getProductId()));
 
         if (product.getStockQuantity() < request.getQuantity()) {
-            throw new RuntimeException("Yetersiz stok. Mevcut stok: " + product.getStockQuantity());
+            throw new BadRequestException("Yetersiz stok. Mevcut stok: " + product.getStockQuantity());
         }
 
         Optional<CartItem> existingItem = cart.getItems().stream()
@@ -55,7 +56,7 @@ public class CartServiceImpl implements CartService {
             CartItem item = existingItem.get();
             int newQuantity = item.getQuantity() + request.getQuantity();
             if (product.getStockQuantity() < newQuantity) {
-                throw new RuntimeException("Yetersiz stok. Sepetinizdeki toplam miktar stok sınırını aşıyor: " + product.getStockQuantity());
+                throw new BadRequestException("Yetersiz stok. Sepetinizdeki toplam miktar stok sınırını aşıyor: " + product.getStockQuantity());
             }
             item.setQuantity(newQuantity);
         } else {
@@ -82,7 +83,7 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new ResourceNotFoundException("Sepet öğesi bulunamadı: " + cartItemId));
 
         if (cartItem.getProduct().getStockQuantity() < quantity) {
-            throw new RuntimeException("Yetersiz stok. Mevcut stok: " + cartItem.getProduct().getStockQuantity());
+            throw new BadRequestException("Yetersiz stok. Mevcut stok: " + cartItem.getProduct().getStockQuantity());
         }
 
         cartItem.setQuantity(quantity);
