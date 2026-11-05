@@ -1,5 +1,7 @@
 package com.ecommerce.api.service.impl;
 
+import com.ecommerce.api.dto.CreateProductRequest;
+import com.ecommerce.api.dto.ProductResponse;
 import com.ecommerce.api.entity.Category;
 import com.ecommerce.api.entity.Product;
 import com.ecommerce.api.exception.ResourceNotFoundException;
@@ -20,57 +22,99 @@ public class ProductServiceImpl implements ProductService {
     private final CategoryRepository categoryRepository;
 
     @Override
+    @Transactional
+    public ProductResponse createProduct(CreateProductRequest request) {
+        if (productRepository.existsBySku(request.getSku())) {
+            throw new RuntimeException("Bu SKU koduna sahip bir ürün zaten mevcut: " + request.getSku());
+        }
+
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Kategori bulunamadı: " + request.getCategoryId()));
+
+        Product product = Product.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .price(request.getPrice())
+                .stockQuantity(request.getStockQuantity())
+                .sku(request.getSku())
+                .category(category)
+                .build();
+
+        Product savedProduct = productRepository.save(product);
+        return mapToResponse(savedProduct);
+    }
+
+    @Override
     @Transactional(readOnly = true)
-    public List<Product> getAllProducts() {
-        return productRepository.findAll();
+    public ProductResponse getProductById(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı: " + id));
+        return mapToResponse(product);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getAllProducts() {
+        return productRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getProductsByCategoryId(Long categoryId) {
+        return productRepository.findByCategoryId(categoryId)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
     }
 
     @Override
     @Transactional
-    public Product createProduct(Product product) {
-        if (product.getCategory() != null && product.getCategory().getId() != null) {
-            Category category = categoryRepository.findById(product.getCategory().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Kategori bulunamadı! ID: " + product.getCategory().getId()));
-            product.setCategory(category);
-        }
-        return productRepository.save(product);
-    }
+    public ProductResponse updateProduct(Long id, CreateProductRequest request) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı: " + id));
 
-    @Override
-    @Transactional(readOnly = true)
-    public Product getProductById(Long id) {
-        return productRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı! ID: " + id));
-    }
-
-    @Override
-    @Transactional
-    public Product updateProduct(Long id, Product productDetails) {
-        Product product = getProductById(id);
-        product.setName(productDetails.getName());
-        product.setDescription(productDetails.getDescription());
-        product.setPrice(productDetails.getPrice());
-        product.setStockQuantity(productDetails.getStockQuantity());
-
-        if (productDetails.getCategory() != null && productDetails.getCategory().getId() != null) {
-            Category category = categoryRepository.findById(productDetails.getCategory().getId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Kategori bulunamadı! ID: " + productDetails.getCategory().getId()));
-            product.setCategory(category);
+        if (!product.getSku().equals(request.getSku()) && productRepository.existsBySku(request.getSku())) {
+            throw new RuntimeException("Bu SKU koduna sahip başka bir ürün mevcut: " + request.getSku());
         }
 
-        return productRepository.save(product);
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Kategori bulunamadı: " + request.getCategoryId()));
+
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setPrice(request.getPrice());
+        product.setStockQuantity(request.getStockQuantity());
+        product.setSku(request.getSku());
+        product.setCategory(category);
+
+        Product updatedProduct = productRepository.save(product);
+        return mapToResponse(updatedProduct);
     }
 
     @Override
     @Transactional
     public void deleteProduct(Long id) {
-        Product product = getProductById(id);
-        productRepository.delete(product);
+        if (!productRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Ürün bulunamadı: " + id);
+        }
+        productRepository.deleteById(id);
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<Product> getProductsByCategoryId(Long categoryId) {
-        return productRepository.findByCategoryId(categoryId);
+    private ProductResponse mapToResponse(Product product) {
+        return ProductResponse.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .description(product.getDescription())
+                .price(product.getPrice())
+                .stockQuantity(product.getStockQuantity())
+                .sku(product.getSku())
+                .categoryId(product.getCategory().getId())
+                .categoryName(product.getCategory().getName())
+                .createdAt(product.getCreatedAt())
+                .updatedAt(product.getUpdatedAt())
+                .build();
     }
 }

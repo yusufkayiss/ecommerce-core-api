@@ -1,10 +1,12 @@
 package com.ecommerce.api.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "products")
@@ -12,28 +14,37 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Product {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Ürün adı boş olamaz!")
     @Column(nullable = false)
     private String name;
 
+    @Column(columnDefinition = "TEXT")
     private String description;
 
-    @NotNull(message = "Fiyat bilgisi zorunludur!")
-    @Positive(message = "Fiyat 0'dan büyük olmalıdır!")
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
-    @NotNull(message = "Stok miktarı zorunludur!")
-    @Min(value = 0, message = "Stok miktarı negatif olamaz!")
+    @Column(name = "stock_quantity", nullable = false)
     private Integer stockQuantity;
 
-    @ManyToOne
-    @JoinColumn(name = "category_id")
+    @Column(unique = true, nullable = false)
+    private String sku;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
     private Category category;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }
