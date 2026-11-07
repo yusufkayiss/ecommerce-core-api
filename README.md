@@ -17,7 +17,21 @@ A robust, scalable, and enterprise-grade backend REST API designed for e-commerc
 - **Security**: Spring Security & Stateless JWT Authentication (`@AuthenticationPrincipal`)
 - **Persistence**: Spring Data JPA / Hibernate
 - **Database**: PostgreSQL / MySQL
+- **Documentation**: OpenAPI 3.0 / Swagger UI
 - **Utilities**: Lombok
+
+### 📐 System Architecture
+
+```mermaid
+graph TD
+    Client[Client / Postman] -->|HTTP Request + Bearer JWT| Security[Spring Security Filter Chain]
+    Security -->|Authenticated Principal| Controller[REST Controllers]
+    Controller -->|DTO Mapping| Service[Service Layer @Transactional]
+    Service -->|Business Logic & Validation| Repo[Spring Data JPA Repositories]
+    Repo -->|SQL Queries| DB[(PostgreSQL Database)]
+    
+    GlobalHandler[@RestControllerAdvice] -.->|Captures Exceptions & Returns Error JSON| Client
+```
 
 ### ✨ Architectural Highlights
 - **Stateless JWT Security**: End-to-end authentication. Authenticated user details contextually bound via `@AuthenticationPrincipal`.
@@ -25,7 +39,11 @@ A robust, scalable, and enterprise-grade backend REST API designed for e-commerc
 - **Transactional Order & Inventory Control**: Real-time stock verification, automated stock deduction, and atomic cart clearing upon order placement.
 - **Global Exception Handling**: Centralized `@RestControllerAdvice` capturing runtime exceptions and mapping them to standardized `ErrorResponse` JSON payloads.
 
-### 📌 API Endpoints
+### 📖 API Documentation & Endpoints
+
+Interactive Swagger UI is available when running the application locally:
+- **Swagger UI**: `http://localhost:8080/swagger-ui.html`
+- **OpenAPI Spec**: `http://localhost:8080/v3/api-docs`
 
 #### 🔐 Authentication
 - `POST /api/v1/auth/register` - Register a new user
@@ -41,11 +59,25 @@ A robust, scalable, and enterprise-grade backend REST API designed for e-commerc
 - `GET /api/v1/orders` - Fetch user order history
 
 ### 💻 Getting Started (Installation)
-1. **Clone the repository:** `git clone https://github.com/yusufkayiss/e-commerce-core-rest-api.git`
-2. **Configure Database:** Update credentials in `src/main/resources/application.yml`.
-3. **Build & Run:** 
-   `mvn clean install` 
-   `mvn spring-boot:run`
+
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/yusufkayiss/ecommerce-core-api.git](https://github.com/yusufkayiss/ecommerce-core-api.git)
+   cd ecommerce-core-api
+   ```
+
+2. **Option A: Run via Docker Compose (Recommended)**
+   ```bash
+   docker compose up -d
+   ```
+
+3. **Option B: Run Locally via Maven**
+   - Update database credentials in `src/main/resources/application.yml`.
+   - Build and run:
+     ```bash
+     mvn clean install
+     mvn spring-boot:run
+     ```
 
 ---
 
@@ -60,7 +92,21 @@ Spring Boot 3, Spring Security (JWT) ve temiz mimari prensipleri kullanılarak g
 - **Güvenlik**: Spring Security & Stateless JWT Kimlik Doğrulama (`@AuthenticationPrincipal`)
 - **Veri Katmanı**: Spring Data JPA / Hibernate
 - **Veritabanı**: PostgreSQL / MySQL
+- **Dokümantasyon**: OpenAPI 3.0 / Swagger UI
 - **Araçlar**: Lombok
+
+### 📐 Sistem Mimarisi
+
+```mermaid
+graph TD
+    Client[İstemci / Postman] -->|HTTP İsteği + Bearer JWT| Security[Spring Security Filtre Zinciri]
+    Security -->|Yetkilendirilmiş Kullanıcı| Controller[REST Denetleyicileri]
+    Controller -->|DTO Dönüşümü| Service[Servis Katmanı @Transactional]
+    Service -->|İş Mantığı ve Doğrulama| Repo[Spring Data JPA Depoları]
+    Repo -->|SQL Sorguları| DB[(PostgreSQL Veritabanı)]
+    
+    GlobalHandler[@RestControllerAdvice] -.->|Hataları Yakalar ve JSON Döner| Client
+```
 
 ### ✨ Öne Çıkan Mimari Özellikler
 - **Stateless JWT Güvenlik Mimarisi**: Uçtan uca kimlik doğrulama. Oturum açmış kullanıcı bilgileri `@AuthenticationPrincipal` ile controller katmanına aktarılır.
@@ -68,7 +114,11 @@ Spring Boot 3, Spring Security (JWT) ve temiz mimari prensipleri kullanılarak g
 - **Sipariş & Stok Yönetimi**: Sipariş verme sırasında anlık stok kontrolü, otomatik stok düşümü ve sepet sıfırlama işlemlerinin `@Transactional` bütünlükle yürütülmesi.
 - **Merkezi Hata Yönetimi**: `@RestControllerAdvice` ile sistemdeki istisnaların yakalanıp zaman damgalı standart `ErrorResponse` JSON çıktılarına dönüştürülmesi.
 
-### 📌 API Endpoint Özeti
+### 📖 API Dokümantasyonu & Endpoint'ler
+
+Uygulama yerelde çalışırken interaktif Swagger arayüzüne erişebilirsiniz:
+- **Swagger UI**: `http://localhost:8080/swagger-ui.html`
+- **OpenAPI Şeması**: `http://localhost:8080/v3/api-docs`
 
 #### 🔐 Kimlik Doğrulama (Auth)
 - `POST /api/v1/auth/register` - Yeni kullanıcı kaydı
@@ -84,8 +134,22 @@ Spring Boot 3, Spring Security (JWT) ve temiz mimari prensipleri kullanılarak g
 - `GET /api/v1/orders` - Kullanıcı sipariş geçmişini listeleme
 
 ### 💻 Kurulum Adımları
-1. **Repoyu Klonlayın:** `git clone https://github.com/yusufkayiss/e-commerce-core-rest-api.git`
-2. **Veritabanı Ayarı:** `src/main/resources/application.yml` içindeki bilgileri kendi lokal veritabanınıza göre güncelleyin.
-3. **Çalıştırın:** 
-   `mvn clean install` 
-   `mvn spring-boot:run`
+
+1. **Repoyu Klonlayın:**
+   ```bash
+   git clone [https://github.com/yusufkayiss/ecommerce-core-api.git](https://github.com/yusufkayiss/ecommerce-core-api.git)
+   cd ecommerce-core-api
+   ```
+
+2. **Yol A: Docker Compose ile Çalıştırma (Önerilen)**
+   ```bash
+   docker compose up -d
+   ```
+
+3. **Yol B: Maven ile Lokal Çalıştırma**
+   - `src/main/resources/application.yml` içindeki veritabanı bilgilerini güncelleyin.
+   - Derleyin ve çalıştırın:
+     ```bash
+     mvn clean install
+     mvn spring-boot:run
+     ```
