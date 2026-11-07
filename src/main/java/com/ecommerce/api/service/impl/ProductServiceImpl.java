@@ -9,6 +9,8 @@ import com.ecommerce.api.repository.CategoryRepository;
 import com.ecommerce.api.repository.ProductRepository;
 import com.ecommerce.api.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"products", "products_by_category"}, allEntries = true)
     public ProductResponse createProduct(CreateProductRequest request) {
         if (productRepository.existsBySku(request.getSku())) {
             throw new RuntimeException("Bu SKU koduna sahip bir ürün zaten mevcut: " + request.getSku());
@@ -46,6 +49,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "products", key = "#id")
     public ProductResponse getProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı: " + id));
@@ -54,6 +58,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "products", key = "'all'")
     public List<ProductResponse> getAllProducts() {
         return productRepository.findAll()
                 .stream()
@@ -63,6 +68,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "products_by_category", key = "#categoryId")
     public List<ProductResponse> getProductsByCategoryId(Long categoryId) {
         return productRepository.findByCategoryId(categoryId)
                 .stream()
@@ -72,6 +78,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"products", "products_by_category"}, allEntries = true)
     public ProductResponse updateProduct(Long id, CreateProductRequest request) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı: " + id));
@@ -96,6 +103,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
+    @CacheEvict(value = {"products", "products_by_category"}, allEntries = true)
     public void deleteProduct(Long id) {
         if (!productRepository.existsById(id)) {
             throw new ResourceNotFoundException("Ürün bulunamadı: " + id);
