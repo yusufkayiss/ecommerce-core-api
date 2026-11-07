@@ -13,11 +13,11 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CategoryCreateRequest {
 
-    @NotBlank(message = "Kategori adı boş bırakılamaz")
-    @Size(max = 100, message = "Kategori adı en fazla 100 karakter olabilir")
+    @NotBlank(message = "Kategori adı boş olamaz")
+    @Size(min = 2, max = 50, message = "Kategori adı 2 ile 50 karakter arasında olmalıdır")
     private String name;
 
-    @Size(max = 500, message = "Açıklama en fazla 500 karakter olabilir")
+    @Size(max = 255, message = "Açıklama en fazla 255 karakter olabilir")
     private String description;
 
     private Long parentId;
