@@ -26,11 +26,11 @@ A robust, scalable, and enterprise-grade backend REST API designed for e-commerc
 graph TD
     Client[Client / Postman] -->|HTTP Request + Bearer JWT| Security[Spring Security Filter Chain]
     Security -->|Authenticated Principal| Controller[REST Controllers]
-    Controller -->|DTO Mapping| Service[Service Layer @Transactional]
+    Controller -->|DTO Mapping| Service["Service Layer @Transactional"]
     Service -->|Business Logic & Validation| Repo[Spring Data JPA Repositories]
     Repo -->|SQL Queries| DB[(PostgreSQL Database)]
     
-    GlobalHandler[@RestControllerAdvice] -.->|Captures Exceptions & Returns Error JSON| Client
+    GlobalHandler["@RestControllerAdvice"] -.->|Captures Exceptions & Returns Error JSON| Client
 ```
 
 ### ✨ Architectural Highlights
@@ -101,11 +101,11 @@ Spring Boot 3, Spring Security (JWT) ve temiz mimari prensipleri kullanılarak g
 graph TD
     Client[İstemci / Postman] -->|HTTP İsteği + Bearer JWT| Security[Spring Security Filtre Zinciri]
     Security -->|Yetkilendirilmiş Kullanıcı| Controller[REST Denetleyicileri]
-    Controller -->|DTO Dönüşümü| Service[Servis Katmanı @Transactional]
+    Controller -->|DTO Dönüşümü| Service["Servis Katmanı @Transactional"]
     Service -->|İş Mantığı ve Doğrulama| Repo[Spring Data JPA Depoları]
     Repo -->|SQL Sorguları| DB[(PostgreSQL Veritabanı)]
     
-    GlobalHandler[@RestControllerAdvice] -.->|Hataları Yakalar ve JSON Döner| Client
+    GlobalHandler["@RestControllerAdvice"] -.->|Hataları Yakalar ve JSON Döner| Client
 ```
 
 ### ✨ Öne Çıkan Mimari Özellikler
