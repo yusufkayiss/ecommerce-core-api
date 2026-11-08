@@ -1,9 +1,11 @@
 package com.ecommerce.api.service.impl;
 
+import com.ecommerce.api.dto.event.OrderCreatedEvent;
 import com.ecommerce.api.dto.response.OrderItemResponse;
 import com.ecommerce.api.dto.response.OrderResponse;
 import com.ecommerce.api.entity.*;
 import com.ecommerce.api.exception.ResourceNotFoundException;
+import com.ecommerce.api.producer.OrderEventProducer;
 import com.ecommerce.api.repository.CartRepository;
 import com.ecommerce.api.repository.OrderRepository;
 import com.ecommerce.api.repository.ProductRepository;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,6 +26,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
+    private final OrderEventProducer orderEventProducer;
 
     @Override
     @Transactional
@@ -72,6 +76,16 @@ public class OrderServiceImpl implements OrderService {
         // Sepeti Temizleme
         cart.getItems().clear();
         cartRepository.save(cart);
+
+        // RabbitMQ için Event fırlatılması (Asenkron İşlem)
+        OrderCreatedEvent orderCreatedEvent = new OrderCreatedEvent(
+                savedOrder.getId(),
+                savedOrder.getUser().getEmail(),
+                savedOrder.getTotalAmount(),
+                LocalDateTime.now()
+        );
+
+        orderEventProducer.sendOrderCreatedEvent(orderCreatedEvent);
 
         return mapToResponse(savedOrder);
     }

@@ -59,11 +59,13 @@ public class CartServiceImpl implements CartService {
                 throw new BadRequestException("Yetersiz stok. Sepetinizdeki toplam miktar stok sınırını aşıyor: " + product.getStockQuantity());
             }
             item.setQuantity(newQuantity);
+            item.setPrice(product.getPrice());
         } else {
             CartItem newItem = CartItem.builder()
                     .cart(cart)
                     .product(product)
                     .quantity(request.getQuantity())
+                    .price(product.getPrice()) // Veritabanındaki NOT NULL kısıtlamasını çözen fiyat ataması
                     .build();
             cart.getItems().add(newItem);
         }
