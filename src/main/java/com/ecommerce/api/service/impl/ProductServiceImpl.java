@@ -49,7 +49,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "products", key = "#id")
+    @Cacheable(value = "product", key = "#id")
     public ProductResponse getProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı: " + id));
@@ -58,7 +58,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "products", key = "'all'")
+    @Cacheable(value = "products")
     public List<ProductResponse> getAllProducts() {
         return productRepository.findAll()
                 .stream()
@@ -78,7 +78,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"products", "products_by_category"}, allEntries = true)
+    @CacheEvict(value = {"product", "products", "products_by_category"}, allEntries = true)
     public ProductResponse updateProduct(Long id, CreateProductRequest request) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Ürün bulunamadı: " + id));
@@ -103,7 +103,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"products", "products_by_category"}, allEntries = true)
+    @CacheEvict(value = {"product", "products", "products_by_category"}, allEntries = true)
     public void deleteProduct(Long id) {
         if (!productRepository.existsById(id)) {
             throw new ResourceNotFoundException("Ürün bulunamadı: " + id);
