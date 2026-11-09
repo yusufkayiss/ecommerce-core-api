@@ -1,25 +1,42 @@
 services:
+  app:
+    build: .
+    container_name: ecommerce-api
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_REDIS_HOST=redis
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ecommerce_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+    depends_on:
+      - postgres
+      - redis
+      - rabbitmq
+
   postgres:
-    image: 'postgres:latest'
+    image: postgres:latest
+    container_name: ecommerce-postgres
     environment:
       - POSTGRES_DB=ecommerce_db
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     ports:
-      - '5432:5432'
+      - "5432:5432"
 
   redis:
-    image: 'redis:7-alpine'
+    image: redis:7-alpine
     container_name: ecommerce-redis
     ports:
-      - '6379:6379'
+      - "6379:6379"
 
   rabbitmq:
-    image: 'rabbitmq:3-management'
+    image: rabbitmq:3-management
     container_name: ecommerce-rabbitmq
     ports:
-      - '5672:5672'
-      - '15672:15672'
+      - "5672:5672"
+      - "15672:15672"
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
