@@ -2,21 +2,24 @@
 
 [![Java CI with Maven](https://github.com/yusufkayiss/ecommerce-core-api/actions/workflows/maven.yml/badge.svg)](https://github.com/yusufkayiss/ecommerce-core-api/actions/workflows/maven.yml)
 
-Production-ready, clean architecture principles, and secure E-Commerce Backend API built with Spring Boot.
+Production-ready, event-driven microservice core API built with Spring Boot, PostgreSQL, Redis, and RabbitMQ.
 
 ---
 
 ## 🌐 English
 
 ### 🚀 Overview
-A robust, scalable, and enterprise-grade backend REST API designed for e-commerce applications. Built following industry standards, clean DTO mappings, transactional service layers, and global exception handling.
+A robust, scalable, and enterprise-grade backend REST API designed for e-commerce applications. Built following clean architecture standards, DTO mappings, transactional service layers, Redis caching, and RabbitMQ event streaming for asynchronous notifications.
 
 ### 🛠 Tech Stack
-- **Language**: Java 17+
+- **Language**: Java 21
 - **Framework**: Spring Boot 3.x
+- **Messaging / Event Bus**: RabbitMQ (AMQP Event Producer)
+- **Caching**: Redis
 - **Security**: Spring Security & Stateless JWT Authentication (`@AuthenticationPrincipal`)
 - **Persistence**: Spring Data JPA / Hibernate
-- **Database**: PostgreSQL / MySQL
+- **Database**: PostgreSQL
+- **Containerization**: Docker Compose
 - **Documentation**: OpenAPI 3.0 / Swagger UI
 - **Utilities**: Lombok
 
@@ -27,17 +30,23 @@ graph TD
     Client[Client / Postman] -->|HTTP Request + Bearer JWT| Security[Spring Security Filter Chain]
     Security -->|Authenticated Principal| Controller[REST Controllers]
     Controller -->|DTO Mapping| Service["Service Layer @Transactional"]
+    
+    Service <-->|Read / Write Cache| Redis[(Redis Cache)]
     Service -->|Business Logic & Validation| Repo[Spring Data JPA Repositories]
     Repo -->|SQL Queries| DB[(PostgreSQL Database)]
+    
+    Service -->|Publish OrderCreatedEvent| Rabbit[RabbitMQ Broker]
     
     GlobalHandler["@RestControllerAdvice"] -.->|Captures Exceptions & Returns Error JSON| Client
 ```
 
 ### ✨ Architectural Highlights
-- **Stateless JWT Security**: End-to-end authentication. Authenticated user details contextually bound via `@AuthenticationPrincipal`.
-- **Decoupled DTO Architecture**: Custom response DTOs (`CartResponse`, `OrderResponse`, etc.) eliminating Hibernate proxy circular dependencies and serialization issues.
+- **Event-Driven Architecture**: Asynchronous event publishing to RabbitMQ (`OrderCreatedEvent`) decoupling core operations from notification mechanisms.
+- **Distributed Caching**: Redis integration for high-performance data retrieval and session/cart management.
+- **Stateless JWT Security**: End-to-end authentication with contextually bound user details via `@AuthenticationPrincipal`.
+- **Decoupled DTO Architecture**: Custom response DTOs eliminating Hibernate proxy circular dependencies.
 - **Transactional Order & Inventory Control**: Real-time stock verification, automated stock deduction, and atomic cart clearing upon order placement.
-- **Global Exception Handling**: Centralized `@RestControllerAdvice` capturing runtime exceptions and mapping them to standardized `ErrorResponse` JSON payloads.
+- **Global Exception Handling**: Centralized `@RestControllerAdvice` mapping exceptions to standardized `ErrorResponse` JSON payloads.
 
 ### 📖 API Documentation & Endpoints
 
@@ -55,7 +64,7 @@ Interactive Swagger UI is available when running the application locally:
 - `DELETE /api/v1/cart/items/{itemId}` - Remove item from cart
 
 #### 📦 Order Management
-- `POST /api/v1/orders` - Convert active cart to an order
+- `POST /api/v1/orders` - Convert active cart to an order (Triggers RabbitMQ Event)
 - `GET /api/v1/orders` - Fetch user order history
 
 ### 💻 Getting Started (Installation)
@@ -66,32 +75,27 @@ Interactive Swagger UI is available when running the application locally:
    cd ecommerce-core-api
    ```
 
-2. **Option A: Run via Docker Compose (Recommended)**
+2. **Run Full Stack via Docker Compose (Recommended)**
    ```bash
-   docker compose up -d
+   docker compose up --build -d
    ```
-
-3. **Option B: Run Locally via Maven**
-   - Update database credentials in `src/main/resources/application.yml`.
-   - Build and run:
-     ```bash
-     mvn clean install
-     mvn spring-boot:run
-     ```
 
 ---
 
 ## 📍 Türkçe
 
 ### 🚀 Genel Bakış
-Spring Boot 3, Spring Security (JWT) ve temiz mimari prensipleri kullanılarak geliştirilmiş, üretime hazır (production-ready) E-Ticaret Backend REST API projesi.
+Spring Boot 3, Java 21, PostgreSQL, Redis ve RabbitMQ altyapısıyla geliştirilmiş; olay güdümlü (event-driven) mikroservis mimarisini destekleyen üretime hazır (production-ready) E-Ticaret Core REST API projesi.
 
 ### 🛠 Teknolojiler
-- **Dil**: Java 17+
+- **Dil**: Java 21
 - **Framework**: Spring Boot 3.x
+- **Mesajlaşma / Event Bus**: RabbitMQ (AMQP Event Producer)
+- **Önbellekleme**: Redis
 - **Güvenlik**: Spring Security & Stateless JWT Kimlik Doğrulama (`@AuthenticationPrincipal`)
 - **Veri Katmanı**: Spring Data JPA / Hibernate
-- **Veritabanı**: PostgreSQL / MySQL
+- **Veritabanı**: PostgreSQL
+- **Konteynerleştirme**: Docker Compose
 - **Dokümantasyon**: OpenAPI 3.0 / Swagger UI
 - **Araçlar**: Lombok
 
@@ -102,21 +106,26 @@ graph TD
     Client[İstemci / Postman] -->|HTTP İsteği + Bearer JWT| Security[Spring Security Filtre Zinciri]
     Security -->|Yetkilendirilmiş Kullanıcı| Controller[REST Denetleyicileri]
     Controller -->|DTO Dönüşümü| Service["Servis Katmanı @Transactional"]
+    
+    Service <-->|Önbellek Okuma / Yazma| Redis[(Redis Cache)]
     Service -->|İş Mantığı ve Doğrulama| Repo[Spring Data JPA Depoları]
     Repo -->|SQL Sorguları| DB[(PostgreSQL Veritabanı)]
+    
+    Service -->|OrderCreatedEvent Yayınlar| Rabbit[RabbitMQ Broker]
     
     GlobalHandler["@RestControllerAdvice"] -.->|Hataları Yakalar ve JSON Döner| Client
 ```
 
 ### ✨ Öne Çıkan Mimari Özellikler
-- **Stateless JWT Güvenlik Mimarisi**: Uçtan uca kimlik doğrulama. Oturum açmış kullanıcı bilgileri `@AuthenticationPrincipal` ile controller katmanına aktarılır.
-- **Temiz DTO Katmanı**: Hibernate proxy ve dairesel bağımlılık (circular reference) hatalarını engelleyen özel DTO (`CartResponse`, `OrderResponse` vb.) yapısı.
+- **Olay Güdümlü Mimari (Event-Driven)**: Sipariş oluştuğunda RabbitMQ üzerine `OrderCreatedEvent` fırlatarak bildirim servislerini ana sistemden bağımsız kılma.
+- **Dağıtık Önbellekleme (Redis)**: Yüksek performanslı veri erişimi ve sepet/oturum yönetimi için Redis kullanımı.
+- **Stateless JWT Güvenlik Mimarisi**: Oturum açmış kullanıcı bilgilerinin `@AuthenticationPrincipal` ile controller katmanına aktarılması.
+- **Temiz DTO Katmanı**: Hibernate dairesel bağımlılık (circular reference) hatalarını engelleyen DTO yapısı.
 - **Sipariş & Stok Yönetimi**: Sipariş verme sırasında anlık stok kontrolü, otomatik stok düşümü ve sepet sıfırlama işlemlerinin `@Transactional` bütünlükle yürütülmesi.
-- **Merkezi Hata Yönetimi**: `@RestControllerAdvice` ile sistemdeki istisnaların yakalanıp zaman damgalı standart `ErrorResponse` JSON çıktılarına dönüştürülmesi.
+- **Merkezi Hata Yönetimi**: `@RestControllerAdvice` ile istisnaların yakalanıp standart `ErrorResponse` JSON çıktılarına dönüştürülmesi.
 
 ### 📖 API Dokümantasyonu & Endpoint'ler
 
-Uygulama yerelde çalışırken interaktif Swagger arayüzüne erişebilirsiniz:
 - **Swagger UI**: `http://localhost:8080/swagger-ui.html`
 - **OpenAPI Şeması**: `http://localhost:8080/v3/api-docs`
 
@@ -130,7 +139,7 @@ Uygulama yerelde çalışırken interaktif Swagger arayüzüne erişebilirsiniz:
 - `DELETE /api/v1/cart/items/{itemId}` - Sepetten ürün silme
 
 #### 📦 Sipariş İşlemleri (Orders)
-- `POST /api/v1/orders` - Sepetteki ürünlerle sipariş oluşturma
+- `POST /api/v1/orders` - Sipariş oluşturma (RabbitMQ Olayı Tetikler)
 - `GET /api/v1/orders` - Kullanıcı sipariş geçmişini listeleme
 
 ### 💻 Kurulum Adımları
@@ -141,15 +150,7 @@ Uygulama yerelde çalışırken interaktif Swagger arayüzüne erişebilirsiniz:
    cd ecommerce-core-api
    ```
 
-2. **Yol A: Docker Compose ile Çalıştırma (Önerilen)**
+2. **Docker Compose ile Tüm Yığını Çalıştırma:**
    ```bash
-   docker compose up -d
+   docker compose up --build -d
    ```
-
-3. **Yol B: Maven ile Lokal Çalıştırma**
-   - `src/main/resources/application.yml` içindeki veritabanı bilgilerini güncelleyin.
-   - Derleyin ve çalıştırın:
-     ```bash
-     mvn clean install
-     mvn spring-boot:run
-     ```
