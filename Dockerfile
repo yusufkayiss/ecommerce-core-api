@@ -1,13 +1,18 @@
-# 1. Aşama: Build (Derleme)
+# 1. Aşama: Build (Derleme + Bağımlılık Önbellekleme)
 FROM maven:3.9-eclipse-temurin-17 AS builder
 WORKDIR /app
 COPY pom.xml .
+RUN mvn dependency:go-offline -B
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN mvn clean package -DskipTests -B
 
-# 2. Aşama: Run (Hafif JRE üzerinde uygulamayı çalıştırma)
+# 2. Aşama: Run (Hafif JRE + Non-Root Güvenlik)
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
+
+RUN addgroup -S spring && adduser -S spring -G spring
+USER spring:spring
+
 COPY --from=builder /app/target/*.jar app.jar
 
 EXPOSE 8080

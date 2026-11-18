@@ -1,0 +1,22 @@
+spring:
+  jpa:
+    show-sql: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+management:
+  endpoint:
+    health:
+      show-details: when-authorized
+  tracing:
+    sampling:
+      probability: 0.2
+
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET_KEY}
