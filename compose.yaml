@@ -8,12 +8,15 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - CORE_API_URI=http://ecommerce-api:8080
-      - NOTIFICATION_SERVICE_URI=http://notification-service:8081
+      - NOTIFICATION_SERVICE_URI=http://notification-service:8082
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
     depends_on:
       redis:
         condition: service_healthy
       ecommerce-api:
+        condition: service_started
+      zipkin:
         condition: service_started
     networks:
       - ecommerce-network
@@ -33,6 +36,7 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USERNAME=guest
       - RABBITMQ_PASSWORD=guest
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
     depends_on:
       postgres:
@@ -41,6 +45,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      zipkin:
+        condition: service_started
     networks:
       - ecommerce-network
 
@@ -48,15 +54,18 @@ services:
     build: ../notification-service
     container_name: notification-service
     ports:
-      - "8082:8081"
+      - "8082:8082"
     environment:
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
-      - SPRING_RABBITMQ_USERNAME=guest
-      - SPRING_RABBITMQ_PASSWORD=guest
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+      - ZIPKIN_ENDPOINT=http://zipkin:9411/api/v2/spans
     depends_on:
       rabbitmq:
         condition: service_healthy
+      zipkin:
+        condition: service_started
     networks:
       - ecommerce-network
 
@@ -109,8 +118,48 @@ services:
     networks:
       - ecommerce-network
 
+  zipkin:
+    image: openzipkin/zipkin:3
+    container_name: ecommerce-zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - ecommerce-network
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: ecommerce-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - api-gateway
+      - ecommerce-api
+      - notification-service
+    networks:
+      - ecommerce-network
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: ecommerce-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+      - zipkin
+    networks:
+      - ecommerce-network
+
 volumes:
   postgres_data:
+  grafana_data:
 
 networks:
   ecommerce-network:
