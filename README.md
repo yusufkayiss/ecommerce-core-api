@@ -1,83 +1,98 @@
-# 🛒 E-Commerce Core REST API
+# 🛒 E-Commerce Microservices Platform & Core API
 
 [![Java CI with Maven](https://github.com/yusufkayiss/ecommerce-core-api/actions/workflows/maven.yml/badge.svg)](https://github.com/yusufkayiss/ecommerce-core-api/actions/workflows/maven.yml)
 
-Production-ready, event-driven microservice core API built with Spring Boot, PostgreSQL, Redis, and RabbitMQ.
+Production-ready, event-driven e-commerce backend platform built with **Spring Boot**, **Spring Cloud Gateway**, **PostgreSQL**, **Redis**, and **RabbitMQ**.
 
 ---
 
 ## 🌐 English
 
 ### 🚀 Overview
-A robust, scalable, and enterprise-grade backend REST API designed for e-commerce applications. Built following clean architecture standards, DTO mappings, transactional service layers, Redis caching, and RabbitMQ event streaming for asynchronous notifications.
+A distributed, scalable, and enterprise-grade backend architecture designed for modern e-commerce systems. This repository hosts the **Core Domain API** (Authentication, Catalog, Cart, Order & Inventory Management) alongside the root **Docker Compose** orchestration that connects the API Gateway and asynchronous Notification Service.
 
-### 🛠 Tech Stack
-- **Language**: Java 21
-- **Framework**: Spring Boot 3.x
-- **Messaging / Event Bus**: RabbitMQ (AMQP Event Producer)
-- **Caching**: Redis
-- **Security**: Spring Security & Stateless JWT Authentication (`@AuthenticationPrincipal`)
-- **Persistence**: Spring Data JPA / Hibernate
-- **Database**: PostgreSQL
-- **Containerization**: Docker Compose
-- **Documentation**: OpenAPI 3.0 / Swagger UI
-- **Utilities**: Lombok
+### 🧩 Microservices Ecosystem
+
+| Service | Repository | Port | Stack | Responsibility |
+| :--- | :--- | :---: | :--- | :--- |
+| **API Gateway** | [`api-gateway`](https://github.com/yusufkayiss/api-gateway) | `8080` | Spring Cloud Gateway, Redis, Resilience4j | Central entry point, JWT validation, `X-User-Id` header injection, Rate Limiting & Circuit Breaker |
+| **Core API** | [`ecommerce-core-api`](https://github.com/yusufkayiss/ecommerce-core-api) | `8081` | Java 17, Spring Boot 3.2, PostgreSQL, Redis, RabbitMQ | Auth/RBAC, Products, Categories, Cart, Transactional Orders & Event Publishing |
+| **Notification Service** | [`notification-service`](https://github.com/yusufkayiss/notification-service) | `8082` | Java 21, Spring Boot 4.x, RabbitMQ | Asynchronous consumer listening to `OrderCreatedEvent` for customer notifications |
 
 ### 📐 System Architecture
 
 ```mermaid
 graph TD
-    Client[Client / Postman] -->|HTTP Request + Bearer JWT| Security[Spring Security Filter Chain]
-    Security -->|Authenticated Principal| Controller[REST Controllers]
-    Controller -->|DTO Mapping| Service["Service Layer @Transactional"]
+    Client[Client / Frontend / Postman] -->|HTTP + Bearer JWT :8080| Gateway[API Gateway]
     
-    Service <-->|Read / Write Cache| Redis[(Redis Cache)]
-    Service -->|Business Logic & Validation| Repo[Spring Data JPA Repositories]
-    Repo -->|SQL Queries| DB[(PostgreSQL Database)]
+    Gateway <-->|Rate Limiting| Redis[(Redis)]
+    Gateway -->|Validated Request + X-User-Id| CoreAPI[E-Commerce Core API :8081]
     
-    Service -->|Publish OrderCreatedEvent| Rabbit[RabbitMQ Broker]
+    CoreAPI <-->|Distributed Cache| Redis
+    CoreAPI -->|JPA / Transactions| DB[(PostgreSQL :5432)]
+    CoreAPI -->|Publish OrderCreatedEvent| Rabbit[RabbitMQ :5672]
     
-    GlobalHandler["@RestControllerAdvice"] -.->|Captures Exceptions & Returns Error JSON| Client
+    Rabbit -->|AMQP Consume| Notif[Notification Service :8082]
 ```
 
 ### ✨ Architectural Highlights
-- **Event-Driven Architecture**: Asynchronous event publishing to RabbitMQ (`OrderCreatedEvent`) decoupling core operations from notification mechanisms.
-- **Distributed Caching**: Redis integration for high-performance data retrieval and session/cart management.
-- **Stateless JWT Security**: End-to-end authentication with contextually bound user details via `@AuthenticationPrincipal`.
-- **Decoupled DTO Architecture**: Custom response DTOs eliminating Hibernate proxy circular dependencies.
-- **Transactional Order & Inventory Control**: Real-time stock verification, automated stock deduction, and atomic cart clearing upon order placement.
-- **Global Exception Handling**: Centralized `@RestControllerAdvice` mapping exceptions to standardized `ErrorResponse` JSON payloads.
+- **Centralized Edge Security (API Gateway)**: Validates JWT tokens at the gateway level, strips spoofed `X-User-Id` headers, enforces Redis-backed rate limiting, and provides Resilience4j circuit breaking.
+- **Event-Driven Order Pipeline**: Decouples order checkout from notifications by publishing `OrderCreatedEvent` messages to RabbitMQ (`~100ms` end-to-end delivery).
+- **Transactional Inventory Control**: Atomic stock verification, stock deduction (`@Transactional`), and cart clearing upon order confirmation.
+- **Role-Based Access Control (RBAC)**: Fine-grained authorization separating `USER` and `ADMIN` operations across catalog and order management.
+- **Distributed Caching & Persistence**: PostgreSQL 16 for relational integrity and Redis 7 for caching and gateway throttling.
+- **Global Exception Handling**: Centralized `@RestControllerAdvice` mapping domain and validation errors into standardized JSON responses.
 
 ### 📖 API Documentation & Endpoints
 
-Interactive Swagger UI is available when running the application locally:
-- **Swagger UI**: `http://localhost:8080/swagger-ui.html`
-- **OpenAPI Spec**: `http://localhost:8080/v3/api-docs`
+All client requests are routed through the **API Gateway** at `http://localhost:8080`.  
+Direct Core API Swagger documentation is available at:
+- **Swagger UI**: `http://localhost:8081/swagger-ui.html`
+- **OpenAPI Spec**: `http://localhost:8081/v3/api-docs`
+- **RabbitMQ Management UI**: `http://localhost:15672` (`guest` / `guest`)
 
 #### 🔐 Authentication
 - `POST /api/v1/auth/register` - Register a new user
-- `POST /api/v1/auth/authenticate` - Login and retrieve JWT token
+- `POST /api/v1/auth/authenticate` - Authenticate and retrieve JWT token
+
+#### 🏷️ Catalog (Categories & Products)
+- `GET /api/v1/categories` - List all categories
+- `POST /api/v1/categories` - Create a new category *(Admin)*
+- `GET /api/v1/products` - List all products
+- `GET /api/v1/products/{id}` - Get product details & stock
+- `POST /api/v1/products` - Create a new product *(Admin)*
 
 #### 🛒 Cart Management
-- `GET /api/v1/cart` - Fetch user's active cart
-- `POST /api/v1/cart/add` - Add item to cart
+- `GET /api/v1/cart` - Fetch authenticated user's active cart
+- `POST /api/v1/cart/items` - Add item to cart
 - `DELETE /api/v1/cart/items/{itemId}` - Remove item from cart
 
 #### 📦 Order Management
-- `POST /api/v1/orders` - Convert active cart to an order (Triggers RabbitMQ Event)
+- `POST /api/v1/orders` - Convert active cart into an order *(Triggers RabbitMQ Event)*
 - `GET /api/v1/orders` - Fetch user order history
+- `PATCH /api/v1/orders/{id}/status?status=COMPLETED` - Update order status *(Admin)*
 
-### 💻 Getting Started (Installation)
+### 💻 Getting Started (Docker Compose)
 
-1. **Clone the repository:**
+Because `compose.yaml` builds all three microservices together, clone the repositories into the same parent directory:
+
+1. **Clone all microservice repositories:**
    ```bash
+   mkdir ecommerce-platform && cd ecommerce-platform
+   git clone [https://github.com/yusufkayiss/api-gateway.git](https://github.com/yusufkayiss/api-gateway.git)
    git clone [https://github.com/yusufkayiss/ecommerce-core-api.git](https://github.com/yusufkayiss/ecommerce-core-api.git)
-   cd ecommerce-core-api
+   git clone [https://github.com/yusufkayiss/notification-service.git](https://github.com/yusufkayiss/notification-service.git)
    ```
 
-2. **Run Full Stack via Docker Compose (Recommended)**
+2. **Start the entire stack via Docker Compose:**
    ```bash
+   cd ecommerce-core-api
    docker compose up --build -d
+   ```
+
+3. **Verify running containers:**
+   ```bash
+   docker compose ps
    ```
 
 ---
@@ -85,72 +100,87 @@ Interactive Swagger UI is available when running the application locally:
 ## 📍 Türkçe
 
 ### 🚀 Genel Bakış
-Spring Boot 3, Java 21, PostgreSQL, Redis ve RabbitMQ altyapısıyla geliştirilmiş; olay güdümlü (event-driven) mikroservis mimarisini destekleyen üretime hazır (production-ready) E-Ticaret Core REST API projesi.
+Modern e-ticaret sistemleri için tasarlanmış; dağıtık, ölçeklenebilir ve olay güdümlü (event-driven) mikroservis backend platformu. Bu depo, temel iş kurallarını barındıran **Core API** servisini ve tüm altyapıyı tek komutta ayağa kaldıran **Docker Compose** orkestrasyonunu içerir.
 
-### 🛠 Teknolojiler
-- **Dil**: Java 21
-- **Framework**: Spring Boot 3.x
-- **Mesajlaşma / Event Bus**: RabbitMQ (AMQP Event Producer)
-- **Önbellekleme**: Redis
-- **Güvenlik**: Spring Security & Stateless JWT Kimlik Doğrulama (`@AuthenticationPrincipal`)
-- **Veri Katmanı**: Spring Data JPA / Hibernate
-- **Veritabanı**: PostgreSQL
-- **Konteynerleştirme**: Docker Compose
-- **Dokümantasyon**: OpenAPI 3.0 / Swagger UI
-- **Araçlar**: Lombok
+### 🧩 Mikroservis Ekosistemi
+
+| Servis | GitHub Deposu | Port | Teknoloji Yığını | Sorumluluk |
+| :--- | :--- | :---: | :--- | :--- |
+| **API Gateway** | [`api-gateway`](https://github.com/yusufkayiss/api-gateway) | `8080` | Spring Cloud Gateway, Redis, Resilience4j | Tek giriş noktası, JWT doğrulama, `X-User-Id` başlık enjeksiyonu, Rate Limiting ve Circuit Breaker |
+| **Core API** | [`ecommerce-core-api`](https://github.com/yusufkayiss/ecommerce-core-api) | `8081` | Java 17, Spring Boot 3.2, PostgreSQL, Redis, RabbitMQ | Kimlik doğrulama/RBAC, Ürün, Kategori, Sepet, Sipariş/Stok yönetimi ve Event yayını |
+| **Notification Service** | [`notification-service`](https://github.com/yusufkayiss/notification-service) | `8082` | Java 21, Spring Boot 4.x, RabbitMQ | RabbitMQ üzerinden `OrderCreatedEvent` mesajlarını dinleyip asenkron bildirim işleme |
 
 ### 📐 Sistem Mimarisi
 
 ```mermaid
 graph TD
-    Client[İstemci / Postman] -->|HTTP İsteği + Bearer JWT| Security[Spring Security Filtre Zinciri]
-    Security -->|Yetkilendirilmiş Kullanıcı| Controller[REST Denetleyicileri]
-    Controller -->|DTO Dönüşümü| Service["Servis Katmanı @Transactional"]
+    Client[İstemci / Frontend / Postman] -->|HTTP + Bearer JWT :8080| Gateway[API Gateway]
     
-    Service <-->|Önbellek Okuma / Yazma| Redis[(Redis Cache)]
-    Service -->|İş Mantığı ve Doğrulama| Repo[Spring Data JPA Depoları]
-    Repo -->|SQL Sorguları| DB[(PostgreSQL Veritabanı)]
+    Gateway <-->|Rate Limiting| Redis[(Redis)]
+    Gateway -->|Doğrulanmış İstek + X-User-Id| CoreAPI[E-Commerce Core API :8081]
     
-    Service -->|OrderCreatedEvent Yayınlar| Rabbit[RabbitMQ Broker]
+    CoreAPI <-->|Dağıtık Önbellek| Redis
+    CoreAPI -->|JPA / Transaction| DB[(PostgreSQL :5432)]
+    CoreAPI -->|OrderCreatedEvent Yayınlar| Rabbit[RabbitMQ :5672]
     
-    GlobalHandler["@RestControllerAdvice"] -.->|Hataları Yakalar ve JSON Döner| Client
+    Rabbit -->|AMQP Tüketimi| Notif[Notification Service :8082]
 ```
 
 ### ✨ Öne Çıkan Mimari Özellikler
-- **Olay Güdümlü Mimari (Event-Driven)**: Sipariş oluştuğunda RabbitMQ üzerine `OrderCreatedEvent` fırlatarak bildirim servislerini ana sistemden bağımsız kılma.
-- **Dağıtık Önbellekleme (Redis)**: Yüksek performanslı veri erişimi ve sepet/oturum yönetimi için Redis kullanımı.
-- **Stateless JWT Güvenlik Mimarisi**: Oturum açmış kullanıcı bilgilerinin `@AuthenticationPrincipal` ile controller katmanına aktarılması.
-- **Temiz DTO Katmanı**: Hibernate dairesel bağımlılık (circular reference) hatalarını engelleyen DTO yapısı.
-- **Sipariş & Stok Yönetimi**: Sipariş verme sırasında anlık stok kontrolü, otomatik stok düşümü ve sepet sıfırlama işlemlerinin `@Transactional` bütünlükle yürütülmesi.
-- **Merkezi Hata Yönetimi**: `@RestControllerAdvice` ile istisnaların yakalanıp standart `ErrorResponse` JSON çıktılarına dönüştürülmesi.
+- **Merkezi Gateway Güvenliği**: JWT doğrulamasını ağ geçidi katmanında yapar, sahte `X-User-Id` başlıklarını temizler, Redis tabanlı hız sınırlama (Rate Limiting) ve Resilience4j Circuit Breaker uygular.
+- **Olay Güdümlü Sipariş Akışı (Event-Driven)**: Sipariş oluşturulduğunda RabbitMQ üzerine `OrderCreatedEvent` fırlatarak bildirim süreçlerini ana sistemden izole eder (`~100ms` uçtan uca iletim).
+- **Transaction Bütünlüğünde Stok Yönetimi**: Sipariş onayı sırasında stok kontrolü, otomatik stok düşümü ve sepet temizleme işlemlerini `@Transactional` bütünlükle gerçekleştirir.
+- **Rol Tabanlı Yetkilendirme (RBAC)**: Katalog ve sipariş yönetimi uçlarında `USER` ve `ADMIN` yetkilerini birbirinden ayırır.
+- **Merkezi Hata Yönetimi**: `@RestControllerAdvice` ile tüm istisnaları standartlaştırılmış JSON hata yanıtlarına dönüştürür.
 
 ### 📖 API Dokümantasyonu & Endpoint'ler
 
-- **Swagger UI**: `http://localhost:8080/swagger-ui.html`
-- **OpenAPI Şeması**: `http://localhost:8080/v3/api-docs`
+Tüm istemci istekleri **API Gateway** (`http://localhost:8080`) üzerinden yönlendirilir.  
+Doğrudan Core API dokümantasyonu ve yönetim panelleri:
+- **Swagger UI**: `http://localhost:8081/swagger-ui.html`
+- **OpenAPI Şeması**: `http://localhost:8081/v3/api-docs`
+- **RabbitMQ Yönetim Paneli**: `http://localhost:15672` (`guest` / `guest`)
 
 #### 🔐 Kimlik Doğrulama (Auth)
 - `POST /api/v1/auth/register` - Yeni kullanıcı kaydı
 - `POST /api/v1/auth/authenticate` - Giriş yapma ve JWT Token alımı
 
+#### 🏷️ Katalog (Kategori & Ürün)
+- `GET /api/v1/categories` - Kategorileri listeleme
+- `POST /api/v1/categories` - Yeni kategori oluşturma *(Admin)*
+- `GET /api/v1/products` - Ürünleri listeleme
+- `GET /api/v1/products/{id}` - Ürün detayı ve güncel stok bilgisi
+- `POST /api/v1/products` - Yeni ürün oluşturma *(Admin)*
+
 #### 🛒 Sepet Yönetimi (Cart)
-- `GET /api/v1/cart` - Kullanıcı sepetini getirme
-- `POST /api/v1/cart/add` - Sepete ürün ekleme
-- `DELETE /api/v1/cart/items/{itemId}` - Sepetten ürün silme
+- `GET /api/v1/cart` - Aktif kullanıcı sepetini getirme
+- `POST /api/v1/cart/items` - Sepete ürün ekleme
+- `DELETE /api/v1/cart/items/{itemId}` - Sepetten ürün çıkarma
 
 #### 📦 Sipariş İşlemleri (Orders)
-- `POST /api/v1/orders` - Sipariş oluşturma (RabbitMQ Olayı Tetikler)
+- `POST /api/v1/orders` - Aktif sepeti siparişe dönüştürme *(RabbitMQ Olayı Tetikler)*
 - `GET /api/v1/orders` - Kullanıcı sipariş geçmişini listeleme
+- `PATCH /api/v1/orders/{id}/status?status=COMPLETED` - Sipariş durumunu güncelleme *(Admin)*
 
-### 💻 Kurulum Adımları
+### 💻 Kurulum Adımları (Docker Compose)
 
-1. **Repoyu Klonlayın:**
+`compose.yaml` dosyası üç mikroservisi birlikte derlediği için repoları aynı ana klasör altına klonlayın:
+
+1. **Tüm mikroservis depolarını klonlayın:**
    ```bash
+   mkdir ecommerce-platform && cd ecommerce-platform
+   git clone [https://github.com/yusufkayiss/api-gateway.git](https://github.com/yusufkayiss/api-gateway.git)
    git clone [https://github.com/yusufkayiss/ecommerce-core-api.git](https://github.com/yusufkayiss/ecommerce-core-api.git)
-   cd ecommerce-core-api
+   git clone [https://github.com/yusufkayiss/notification-service.git](https://github.com/yusufkayiss/notification-service.git)
    ```
 
-2. **Docker Compose ile Tüm Yığını Çalıştırma:**
+2. **Tüm sistemi Docker Compose ile ayağa kaldırın:**
    ```bash
+   cd ecommerce-core-api
    docker compose up --build -d
+   ```
+
+3. **Çalışan konteynerleri doğrulayın:**
+   ```bash
+   docker compose ps
    ```
