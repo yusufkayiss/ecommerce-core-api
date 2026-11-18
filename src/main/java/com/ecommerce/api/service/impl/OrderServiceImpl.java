@@ -1,18 +1,23 @@
 package com.ecommerce.api.service.impl;
 
+import com.ecommerce.api.config.RabbitMQConfig;
 import com.ecommerce.api.dto.event.OrderCreatedEvent;
 import com.ecommerce.api.dto.response.OrderItemResponse;
 import com.ecommerce.api.dto.response.OrderResponse;
 import com.ecommerce.api.entity.*;
 import com.ecommerce.api.exception.ResourceNotFoundException;
-import com.ecommerce.api.producer.OrderEventProducer;
 import com.ecommerce.api.repository.CartRepository;
 import com.ecommerce.api.repository.OrderRepository;
+import com.ecommerce.api.repository.OutboxEventRepository;
 import com.ecommerce.api.repository.ProductRepository;
+import com.ecommerce.api.service.IdempotencyService;
 import com.ecommerce.api.service.OrderService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,11 +31,29 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
-    private final OrderEventProducer orderEventProducer;
+    private final OutboxEventRepository outboxEventRepository;
+    private final IdempotencyService idempotencyService;
+    private final TransactionTemplate transactionTemplate;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
     public OrderResponse createOrder(Long userId) {
+        return executeCreateOrder(userId);
+    }
+
+    @Override
+    public OrderResponse createOrder(Long userId, String idempotencyKey) {
+        return idempotencyService.execute(
+                "orders",
+                userId,
+                idempotencyKey,
+                OrderResponse.class,
+                () -> transactionTemplate.execute(status -> executeCreateOrder(userId))
+        );
+    }
+
+    private OrderResponse executeCreateOrder(Long userId) {
         Cart cart = cartRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sepet bulunamadı"));
 
@@ -77,7 +100,7 @@ public class OrderServiceImpl implements OrderService {
         cart.getItems().clear();
         cartRepository.save(cart);
 
-        // RabbitMQ için Event fırlatılması (Asenkron İşlem)
+        // Transactional Outbox: Sipariş ile aynı DB transaction'ında Outbox tablosuna kayıt
         OrderCreatedEvent orderCreatedEvent = new OrderCreatedEvent(
                 savedOrder.getId(),
                 savedOrder.getUser().getEmail(),
@@ -85,9 +108,27 @@ public class OrderServiceImpl implements OrderService {
                 LocalDateTime.now()
         );
 
-        orderEventProducer.sendOrderCreatedEvent(orderCreatedEvent);
+        OutboxEvent outboxEvent = OutboxEvent.builder()
+                .aggregateType("ORDER")
+                .aggregateId(String.valueOf(savedOrder.getId()))
+                .eventType("OrderCreatedEvent")
+                .exchangeName(RabbitMQConfig.EXCHANGE_ORDER)
+                .routingKey(RabbitMQConfig.ROUTING_KEY_ORDER_CREATED)
+                .payload(serializeEvent(orderCreatedEvent))
+                .status(OutboxStatus.PENDING)
+                .build();
+
+        outboxEventRepository.save(outboxEvent);
 
         return mapToResponse(savedOrder);
+    }
+
+    private String serializeEvent(Object event) {
+        try {
+            return objectMapper.writeValueAsString(event);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Outbox event JSON formatına dönüştürülemedi", e);
+        }
     }
 
     @Override

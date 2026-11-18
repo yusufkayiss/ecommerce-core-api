@@ -9,6 +9,8 @@ public interface OrderService {
 
     OrderResponse createOrder(Long userId);
 
+    OrderResponse createOrder(Long userId, String idempotencyKey);
+
     OrderResponse getOrderById(Long userId, Long orderId);
 
     List<OrderResponse> getUserOrders(Long userId);

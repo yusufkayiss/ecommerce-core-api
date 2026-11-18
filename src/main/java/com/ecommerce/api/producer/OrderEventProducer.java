@@ -15,11 +15,11 @@ public class OrderEventProducer {
     private final RabbitTemplate rabbitTemplate;
 
     public void sendOrderCreatedEvent(OrderCreatedEvent event) {
-        log.info("Sending OrderCreatedEvent to RabbitMQ: {}", event);
-        rabbitTemplate.convertAndSend(
-                RabbitMQConfig.EXCHANGE_ORDER,
-                RabbitMQConfig.ROUTING_KEY_ORDER_CREATED,
-                event
-        );
+        publish(RabbitMQConfig.EXCHANGE_ORDER, RabbitMQConfig.ROUTING_KEY_ORDER_CREATED, event);
+    }
+
+    public void publish(String exchange, String routingKey, Object event) {
+        log.info("Publishing event to RabbitMQ [exchange={}, routingKey={}]: {}", exchange, routingKey, event);
+        rabbitTemplate.convertAndSend(exchange, routingKey, event);
     }
 }

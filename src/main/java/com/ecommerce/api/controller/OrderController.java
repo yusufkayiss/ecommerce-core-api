@@ -21,8 +21,11 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping
-    public ResponseEntity<OrderResponse> createOrder(@AuthenticationPrincipal User user) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(orderService.createOrder(user.getId()));
+    public ResponseEntity<OrderResponse> createOrder(
+            @AuthenticationPrincipal User user,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(orderService.createOrder(user.getId(), idempotencyKey));
     }
 
     @GetMapping
