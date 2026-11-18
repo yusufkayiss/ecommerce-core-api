@@ -1,36 +1,67 @@
-version: '3.8'
-
 services:
-  app:
-    build: .
-    container_name: ecommerce-api
+  api-gateway:
+    build: ../api-gateway
+    container_name: api-gateway
     ports:
       - "8080:8080"
     environment:
-      - SPRING_REDIS_HOST=redis
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ecommerce_db
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CORE_API_URI=http://ecommerce-api:8080
+      - NOTIFICATION_SERVICE_URI=http://notification-service:8081
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
     depends_on:
-      - postgres
-      - redis
-      - rabbitmq
+      redis:
+        condition: service_healthy
+      ecommerce-api:
+        condition: service_started
+    networks:
+      - ecommerce-network
+
+  ecommerce-api:
+    build: .
+    container_name: ecommerce-api
+    ports:
+      - "8081:8080"
+    environment:
+      - DB_URL=jdbc:postgresql://postgres:5432/ecommerce_db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
 
   notification-service:
     build: ../notification-service
     container_name: notification-service
     ports:
-      - "8081:8081"
+      - "8082:8081"
     environment:
       - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
       - SPRING_RABBITMQ_USERNAME=guest
       - SPRING_RABBITMQ_PASSWORD=guest
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
 
   postgres:
-    image: postgres:latest
+    image: postgres:16-alpine
     container_name: ecommerce-postgres
     environment:
       - POSTGRES_DB=ecommerce_db
@@ -38,12 +69,28 @@ services:
       - POSTGRES_PASSWORD=postgres
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ecommerce_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ecommerce-network
 
   redis:
     image: redis:7-alpine
     container_name: ecommerce-redis
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - ecommerce-network
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -54,3 +101,17 @@ services:
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - ecommerce-network
+
+volumes:
+  postgres_data:
+
+networks:
+  ecommerce-network:
+    driver: bridge

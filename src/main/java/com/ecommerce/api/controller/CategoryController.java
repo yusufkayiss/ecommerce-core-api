@@ -1,8 +1,8 @@
 package com.ecommerce.api.controller;
 
 import com.ecommerce.api.dto.request.CategoryCreateRequest;
-import com.ecommerce.api.dto.response.CategoryResponse;
 import com.ecommerce.api.dto.request.CategoryUpdateRequest;
+import com.ecommerce.api.dto.response.CategoryResponse;
 import com.ecommerce.api.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,19 +35,16 @@ public class CategoryController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<CategoryResponse> getCategoryById(@PathVariable Long id) {
         return ResponseEntity.ok(categoryService.getCategoryById(id));
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<List<CategoryResponse>> getAllCategories() {
         return ResponseEntity.ok(categoryService.getAllCategories());
     }
 
     @GetMapping("/main")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<List<CategoryResponse>> getMainCategories() {
         return ResponseEntity.ok(categoryService.getMainCategories());
     }
