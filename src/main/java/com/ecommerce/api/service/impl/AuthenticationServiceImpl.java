@@ -20,6 +20,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class AuthenticationServiceImpl implements AuthenticationService {
@@ -39,9 +42,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.USER)
                 .build();
-        repository.save(user);
+        user = repository.save(user);
 
-        var jwtToken = jwtService.generateToken(user);
+        var jwtToken = jwtService.generateToken(buildExtraClaims(user), user);
         var refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
         return AuthenticationResponse.builder()
@@ -61,7 +64,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         var user = repository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Kullanıcı bulunamadı"));
 
-        var jwtToken = jwtService.generateToken(user);
+        var jwtToken = jwtService.generateToken(buildExtraClaims(user), user);
         var refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
         return AuthenticationResponse.builder()
@@ -76,7 +79,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 .map(refreshTokenService::verifyExpiration)
                 .map(RefreshToken::getUser)
                 .map(user -> {
-                    String accessToken = jwtService.generateToken(user);
+                    String accessToken = jwtService.generateToken(buildExtraClaims(user), user);
                     return TokenRefreshResponse.builder()
                             .accessToken(accessToken)
                             .refreshToken(request.getRefreshToken())
@@ -90,5 +93,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (refreshToken != null && !refreshToken.isBlank()) {
             refreshTokenService.deleteByToken(refreshToken);
         }
+    }
+
+    private Map<String, Object> buildExtraClaims(User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", user.getId());
+        if (user.getRole() != null) {
+            claims.put("role", user.getRole().name());
+        }
+        return claims;
     }
 }
