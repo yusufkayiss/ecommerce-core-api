@@ -36,6 +36,9 @@ public class OutboxEvent {
     @Column(name = "payload", nullable = false, columnDefinition = "TEXT")
     private String payload;
 
+    @Column(name = "trace_context", columnDefinition = "TEXT")
+    private String traceContext;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 30)
     private OutboxStatus status;

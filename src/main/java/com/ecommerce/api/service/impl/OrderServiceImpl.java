@@ -14,7 +14,11 @@ import com.ecommerce.api.service.IdempotencyService;
 import com.ecommerce.api.service.OrderService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.tracing.Tracer;
+import io.micrometer.tracing.propagation.Propagator;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -22,6 +26,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.List;
 
 @Service
@@ -35,6 +41,9 @@ public class OrderServiceImpl implements OrderService {
     private final IdempotencyService idempotencyService;
     private final TransactionTemplate transactionTemplate;
     private final ObjectMapper objectMapper;
+    private final CacheManager cacheManager;
+    private final Tracer tracer;
+    private final Propagator propagator;
 
     @Override
     @Transactional
@@ -55,10 +64,10 @@ public class OrderServiceImpl implements OrderService {
 
     private OrderResponse executeCreateOrder(Long userId) {
         Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Sepet bulunamadı"));
+                .orElseThrow(() -> new ResourceNotFoundException("Sepet bulunamadÄ±"));
 
         if (cart.getItems().isEmpty()) {
-            throw new RuntimeException("Boş sepet ile sipariş oluşturulamaz");
+            throw new RuntimeException("BoÅŸ sepet ile sipariÅŸ oluÅŸturulamaz");
         }
 
         Order order = Order.builder()
@@ -76,7 +85,7 @@ public class OrderServiceImpl implements OrderService {
                 throw new RuntimeException("Stok yetersiz: " + product.getName());
             }
 
-            // Stok Düşürme
+            // Stok DÃ¼ÅŸÃ¼rme
             product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
             productRepository.save(product);
 
@@ -100,7 +109,7 @@ public class OrderServiceImpl implements OrderService {
         cart.getItems().clear();
         cartRepository.save(cart);
 
-        // Transactional Outbox: Sipariş ile aynı DB transaction'ında Outbox tablosuna kayıt
+        // Transactional Outbox: SipariÅŸ ile aynÄ± DB transaction'Ä±nda Outbox tablosuna kayÄ±t
         OrderCreatedEvent orderCreatedEvent = new OrderCreatedEvent(
                 savedOrder.getId(),
                 savedOrder.getUser().getEmail(),
@@ -115,19 +124,44 @@ public class OrderServiceImpl implements OrderService {
                 .exchangeName(RabbitMQConfig.EXCHANGE_ORDER)
                 .routingKey(RabbitMQConfig.ROUTING_KEY_ORDER_CREATED)
                 .payload(serializeEvent(orderCreatedEvent))
+                .traceContext(captureTraceContext())
                 .status(OutboxStatus.PENDING)
                 .build();
 
         outboxEventRepository.save(outboxEvent);
 
+        evictProductCaches();
+
         return mapToResponse(savedOrder);
+    }
+
+    private void evictProductCaches() {
+        List.of("product", "products", "products_by_category").forEach(cacheName -> {
+            Cache cache = cacheManager.getCache(cacheName);
+            if (cache != null) {
+                cache.clear();
+            }
+        });
+    }
+
+    private String captureTraceContext() {
+        try {
+            if (tracer == null || propagator == null || tracer.currentSpan() == null) {
+                return null;
+            }
+            Map<String, String> carrier = new LinkedHashMap<>();
+            propagator.inject(tracer.currentSpan().context(), carrier, Map::put);
+            return carrier.isEmpty() ? null : objectMapper.writeValueAsString(carrier);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String serializeEvent(Object event) {
         try {
             return objectMapper.writeValueAsString(event);
         } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Outbox event JSON formatına dönüştürülemedi", e);
+            throw new IllegalStateException("Outbox event JSON formatÄ±na dÃ¶nÃ¼ÅŸtÃ¼rÃ¼lemedi", e);
         }
     }
 
@@ -135,10 +169,10 @@ public class OrderServiceImpl implements OrderService {
     @Transactional(readOnly = true)
     public OrderResponse getOrderById(Long userId, Long orderId) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Sipariş bulunamadı: " + orderId));
+                .orElseThrow(() -> new ResourceNotFoundException("SipariÅŸ bulunamadÄ±: " + orderId));
 
         if (!order.getUser().getId().equals(userId)) {
-            throw new RuntimeException("Bu siparişi görüntüleme yetkiniz yok");
+            throw new RuntimeException("Bu sipariÅŸi gÃ¶rÃ¼ntÃ¼leme yetkiniz yok");
         }
 
         return mapToResponse(order);
@@ -157,7 +191,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderResponse updateOrderStatus(Long orderId, OrderStatus status) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Sipariş bulunamadı: " + orderId));
+                .orElseThrow(() -> new ResourceNotFoundException("SipariÅŸ bulunamadÄ±: " + orderId));
 
         order.setStatus(status);
         Order updatedOrder = orderRepository.save(order);
